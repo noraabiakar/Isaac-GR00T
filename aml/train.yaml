@@ -1,0 +1,27 @@
+$schema: https://azuremlschemas.azureedge.net/latest/commandJob.schema.json
+command: >-
+ pip install azureml-sdk && 
+ python scripts/gr00t_finetune.py \
+   --base-model-path ${{outputs.GR00T_CHECKPOINT}} \
+   --dataset-path ${{outputs.MODEL_INPUTS}} \
+   --num-gpus 2 \
+   --output-dir ${{outputs.MODEL_OUTPUTS}}/gr00t_so101_finetuning/   \
+   --report-to "azure_ml" \
+   --max-steps 10000 \
+   --data-config so100_dualcam \
+   --video-backend torchvision_av
+environment: azureml:gr00t-env:1
+outputs:
+  MODEL_OUTPUTS:
+    type: uri_folder
+    path: azureml://datastores/nora_datasets/paths/outputs
+  MODEL_INPUTS:
+    type: uri_folder
+    path: azureml://datastores/nora_datasets/paths/inputs/so101-goat-picking-v1
+  GR00T_CHECKPOINT:
+    type: uri_folder
+    path: azureml://datastores/nora_datasets/paths/GR00T-N1.5-3B
+display_name: gr00t_goat_picking_finetuning
+experiment_name: gr00t_goat_picking_finetuning
+compute: nc80adis-h100-v5-single
+code: ..

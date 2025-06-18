@@ -46,9 +46,7 @@ class TrainRunner:
         self.train_dataset = train_dataset
         # Set up training arguments
         training_args.run_name = (
-            training_args.output_dir.split("/")[-1]
-            if training_args.run_name is None
-            else training_args.run_name
+            training_args.output_dir.split("/")[-1] if training_args.run_name is None else training_args.run_name
         )
         print(f"Run name: {training_args.run_name}")
 
@@ -75,9 +73,7 @@ class TrainRunner:
                 with open(self.exp_cfg_dir / "metadata.json", "r") as f:
                     metadata_json = json.load(f)
             if isinstance(train_dataset, LeRobotSingleDataset):
-                metadata_json.update(
-                    {train_dataset.tag: train_dataset.metadata.model_dump(mode="json")}
-                )
+                metadata_json.update({train_dataset.tag: train_dataset.metadata.model_dump(mode="json")})
             elif isinstance(train_dataset, LeRobotMixtureDataset):
                 metadata_json.update(
                     {
@@ -112,11 +108,17 @@ class TrainRunner:
                     f,
                 )
             training_args.report_to = ["wandb"]
-        else:  # Default to tensorboard
+        elif report_to == "tensorboard":  # Default to tensorboard
             tensorboard_dir = Path(training_args.output_dir) / "runs"
             tensorboard_dir.mkdir(parents=True, exist_ok=True)
             print(f"TensorBoard logs will be saved to: {tensorboard_dir}")
             training_args.report_to = ["tensorboard"]
+        elif report_to == "azure_ml":
+            print("Using AzureML for reporting")
+            training_args.report_to = ["azure_ml"]
+        else:
+            print("No reporting enabled")
+            training_args.report_to = []
 
     def create_trainer(
         self,
@@ -133,9 +135,7 @@ class TrainRunner:
             num_gpus = torch.cuda.device_count()
             grad_acc = max(1, global_batch_size // (bs * num_gpus))
             training_args.gradient_accumulation_steps = grad_acc
-            print(
-                f"Set global batch size to {global_batch_size}, set gradient accumulation steps to {grad_acc}"
-            )
+            print(f"Set global batch size to {global_batch_size}, set gradient accumulation steps to {grad_acc}")
 
         # Create the trainer
         trainer = DualBrainTrainer(
@@ -148,9 +148,7 @@ class TrainRunner:
 
         # Add checkpoint format callback to ensure experiment_cfg is copied to each checkpoint
         run_name = training_args.run_name
-        ckpt_format_callback = CheckpointFormatCallback(
-            run_name=run_name, exp_cfg_dir=self.exp_cfg_dir
-        )
+        ckpt_format_callback = CheckpointFormatCallback(run_name=run_name, exp_cfg_dir=self.exp_cfg_dir)
         trainer.add_callback(ckpt_format_callback)
 
         # Log dataloader information
